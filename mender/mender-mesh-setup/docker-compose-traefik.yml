@@ -1,0 +1,51 @@
+version: '3'
+services:
+  traefik:
+    image: traefik:v2.8
+    restart: always
+    container_name: traefik
+    ports:
+      - '80:80' # http
+      - '443:443' # https
+      - '8080:8080' #dashboard port
+    command:
+      ## Provider Settings - https://docs.traefik.io/providers/docker/#provider-configuration ##
+      - --providers.docker=true # Set docker as the provider for traefik
+      - --providers.docker.exposedbydefault=false # You need to whitelist containers that will be exposed to traefik
+      - --providers.file.filename=/dynamic.yml # Referring to the https upgrade file
+      - --providers.docker.network=web # Use the docker network web for communication between traefik and containser
+      ## Entrypoints Settings - https://docs.traefik.io/routing/entrypoints/#configuration ##
+      - --entrypoints.web.address=:80 # Define an entrypoint for port :80 named web (this can be whatever)
+      ## Certificate Settings (Let's Encrypt) -  https://docs.traefik.io/https/acme/#configuration-examples ##
+      - --certificatesresolvers.mytlschallenge.acme.tlschallenge=true
+      - --certificatesresolvers.mytlschallenge.acme.email=chris@zignage.com
+      - --certificatesresolvers.mytlschallenge.acme.storage=/letsencrypt/acme.json
+      - --entrypoints.websecure.address=:443
+        #- --entrypoints.web-secured.address=:443
+      - "--api.insecure=true" # This enables the dashboard without any authentication
+      - "--api.dashboard=true"
+      - "--log.level=DEBUG"
+        #- --entrypoints.http.address=:80
+    volumes:
+      - ./letsencrypt:/letsencrypt # Volume for certs (TLS)
+      - /var/run/docker.sock:/var/run/docker.sock # Volume for docker admin
+      - ./dynamic.yml:/dynamic.yml # Volume for dynamic conf file, **ref: line 14
+    networks:
+      - web # Tell the container that it has access to this network
+
+    labels:
+      # enable traefik for this services
+      - traefik.enable=true
+      # Define the port inside of the Docker service to use
+      - traefik.web.services.traefik-dashboard.loadbalancer.server.port=8080
+      # Make Traefik use this domain in HTTP
+      - traefik.web.routers.traefik-dashboard-http.entrypoints=web
+      - traefik.web.routers.traefik-dashboard-http.rule=Host(`dashboard.localhost`)
+      # make traefik use this network
+      - traefik.docker.network=web
+        #- traefik.http.routers.mender-old.rule=Host(`mender.localhost`)
+        #- traefik.http.services.mender-old.loadbalancer.server.port=8084
+networks:
+  web:
+    external: true
+

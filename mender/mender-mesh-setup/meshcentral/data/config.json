@@ -1,0 +1,32 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Ylianst/MeshCentral/master/meshcentral-config-schema.json",
+  "settings": {
+    "plugins":{"enabled": false},
+    "_mongoDb": "mongodb://mongouser:mongopass@mongodb:27017/meshcentral",
+    "cert": "traefik.sobe.name",
+    "_WANonly": true,
+    "_LANonly": false,
+    "sessionKey": "XRFTU82VZ9V7HJKUV5445MOLGK5AL3XHEDEB1TKJWAOYYD4N",
+    "port": 4430,
+    "_aliasPort": 443,
+    "redirPort": 80,
+    "_redirAliasPort": 80,
+    "AgentPong": 300,
+    "TLSOffload": true,
+    "SelfUpdate": false,
+    "AllowFraming": false,
+    "WebRTC": false
+  },
+  "domains": {
+    "": {
+      "_title": "MyServer",
+      "_title2": "Servername",
+      "minify": true,
+      "NewAccounts": true,
+      "localSessionRecording": false,
+      "_userNameIsEmail": true,
+      "_certUrl": "traefik.sobe.name",
+      "AgentConfig": [ "webSocketMaskOverride=1" ]
+    }
+  }
+}

@@ -1,0 +1,59 @@
+# docker-compose-meshcentral.yml
+version: "3"
+networks:
+     meshcentral-tier:
+          driver: bridge
+     web:
+          external: true
+
+services:
+     mongodb:
+          restart: always
+          container_name: mongodb
+          image: mongo:4.4.6
+          tty: true
+          env_file:
+               - .env
+          volumes:
+               # mongodb data-directory - A must for data persistence
+               - ./meshcentral/mongodb_data:/data/db
+          expose:
+               - 27017
+          networks:
+
+               - meshcentral-tier
+
+
+     meshcentral:
+          restart: always
+          container_name: meshcentral
+          # use the official meshcentral container
+          image: ghcr.io/ylianst/meshcentral:latest
+          depends_on:
+               - mongodb
+          ports:
+               - 4430:4430
+          volumes: # The volumes will be created automaticly if they do not exists. The only directory that should exist when installing fresh is is meshcentral/data
+               # config.json and other important files live here. A must for data persistence
+               - ./meshcentral/data:/opt/meshcentral/meshcentral-data
+               # where file uploads for users live
+               - ./meshcentral/user_files:/opt/meshcentral/meshcentral-files
+               # location for the meshcentral-backups - this should be mounted to an external storage
+               - ./meshcentral/backup:/opt/meshcentral/meshcentral-backup
+               # location for site customization files
+               - ./meshcentral/web:/opt/meshcentral/meshcentral-web
+          labels:
+              - "traefik.enable=true"
+              - "traefik.http.routers.meshcentral-web.rule=Host(`traefik.sobe.name`)"
+              - "traefik.http.routers.meshcentral-web.entrypoints=web"
+              #- "traefik.http.routers.meshcentral-web.middlewares=redirect@file"
+              - "traefik.http.routers.meshcentral-secured.rule=Host(`traefik.sobe.name`)"
+              - "traefik.http.routers.meshcentral-secured.entrypoints=websecure"
+              - "traefik.http.routers.meshcentral-secured.tls.certresolver=mytlschallenge"
+              - "traefik.http.services.meshcentral.loadbalancer.server.port=4430"
+              - "traefik.docker.network=web"
+
+
+          networks:
+               - meshcentral-tier
+               - web
